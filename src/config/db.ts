@@ -12,12 +12,33 @@ export const connectDB = async (mongoUri: string): Promise<void> => {
     return;
   }
 
-  await mongoose.connect(mongoUri);
-  isConnected = true;
-  console.log("MongoDB cluster connected");
+  // Set up connection event listeners
+  mongoose.connection.on("connected", () => {
+    console.log("Mongoose connected to MongoDB cluster");
+    isConnected = true;
+  });
+
+  mongoose.connection.on("error", (err) => {
+    console.error("Mongoose connection error:", err);
+    isConnected = false;
+  });
+
+  mongoose.connection.on("disconnected", () => {
+    console.log("Mongoose disconnected from MongoDB cluster");
+    isConnected = false;
+  });
+
+  try {
+    await mongoose.connect(mongoUri);
+    console.log("Initial MongoDB connection request sent");
+  } catch (error) {
+    console.error("Failed to connect to MongoDB cluster during initial call:", error);
+    throw error;
+  }
 };
 
 export const getDatabaseConnection = (databaseName: string): Connection => {
+  console.log(`Getting connection for database: ${databaseName}`);
   return mongoose.connection.useDb(databaseName, { useCache: true });
 };
 
